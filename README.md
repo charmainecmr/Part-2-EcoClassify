@@ -1,12 +1,8 @@
 ---
-title: EcoClassify Part 2
-emoji: 🌍
-colorFrom: green
-colorTo: blue
-sdk: gradio
-sdk_version: 4.31.4
+title: Part-2-EcoClassify
 app_file: app.py
-pinned: false
+sdk: gradio
+sdk_version: 5.49.1
 ---
 
 # EcoClassify Part 2: Real-Time Recyclables Detection
