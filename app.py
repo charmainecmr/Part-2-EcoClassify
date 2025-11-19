@@ -74,16 +74,16 @@ def detect(frame):
     global detection_history, last_detected_materials
     
     if frame is None:
-        return None, generate_stats_html([]), "", None
+        return None, generate_stats_html([]), ""
         
     if model is None:
         frame = np.array(frame)
         cv2.putText(frame, "Model not loaded yet", (30, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
-        return frame, generate_stats_html([]), "Model not loaded", None
+        return frame, generate_stats_html([]), "Model not loaded"
 
-    # Run detection
-    results = model.predict(frame, imgsz=640, conf=0.5, verbose=False)
+    # Run detection with optimized settings for speed
+    results = model.predict(frame, imgsz=416, conf=0.5, verbose=False, device='cpu', half=False, max_det=50)
     annotated_frame = results[0].plot()
     
     # Extract detections
@@ -101,7 +101,7 @@ def detect(frame):
     
     # Check for new materials detected
     new_materials = current_materials - last_detected_materials
-    alert_html = None
+    alert_html = ""
     
     if new_materials:
         # Generate alert for new materials
@@ -117,9 +117,8 @@ def detect(frame):
     
     # Generate stats
     stats_html = generate_stats_html(detections)
-    status = f"Detected {len(detections)} items" if detections else "No items detected"
     
-    return annotated_frame, stats_html, status, alert_html
+    return annotated_frame, stats_html, alert_html
 
 def generate_alert_html(material):
     colors = {
@@ -132,9 +131,6 @@ def generate_alert_html(material):
     color, bg_color = colors.get(material, ('#64748b', '#f1f5f9'))
     icon_svg = get_material_icon(material)
     bell_icon = get_bell_icon()
-    
-    # Enhanced bell sound (longer, clearer notification sound)
-    bell_audio = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
     
     return f"""
     <div id="alert-notification" style="position: fixed; top: 20px; right: 20px; z-index: 1000; 
@@ -331,7 +327,7 @@ def generate_stats_html(current_detections):
     
     return html
 
-# Custom CSS
+# Custom CSS continuation
 custom_css = """
 #header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -407,7 +403,7 @@ with gr.Blocks(css=custom_css, title="Eco Classify Part 2 - Real-Time Detection"
     with gr.Row(elem_id="header"):
         with gr.Column():
             gr.Markdown("""
-            # 🔔 Eco Classify Part 2 - Real-Time Detection with Notifications
+            # Eco Classify Part 2 - Real-Time Detection with Notifications
             ### Powered by YOLOv8 with Bell Alerts
             """)
     
@@ -416,12 +412,15 @@ with gr.Blocks(css=custom_css, title="Eco Classify Part 2 - Real-Time Detection"
         with gr.Column(scale=2):
             camera_input = gr.Image(
                 sources=["webcam"], 
-                label="Live Camera Feed",
+                label="Live Camera Feed with Real-Time Detection",
                 type="numpy",
                 streaming=True,
-                elem_id="camera-feed"
+                elem_id="camera-feed",
+                mirror_webcam=True,
+                show_download_button=False,
+                show_share_button=False
             )
-                       
+            
             gr.HTML("""
             <div style="background: white; padding: 24px; border-radius: 12px; 
                         border: 2px solid #e2e8f0; margin-top: 16px; 
@@ -436,7 +435,7 @@ with gr.Blocks(css=custom_css, title="Eco Classify Part 2 - Real-Time Detection"
                 </h3>
                 <ol style="margin: 0; padding-left: 24px; color: #334155; line-height: 2; font-size: 15px;">
                     <strong style="color: #0f172a;">
-                    <li style="margin-bottom: 8px;"><strong style="color: #0f172a;">Click the camera icon above to start webcam</strong></li>
+                    <li style="margin-bottom: 8px;"><strong style="color: #0f172a;">Click "Start" button in the camera feed above</strong></li>
                     <li style="margin-bottom: 8px;"><strong style="color: #0f172a;">Point camera at recyclable items</strong></li>
                     <li style="margin-bottom: 8px;"><strong style="color: #0f172a;">🔔 Listen for bell notification when items detected</strong></li>
                     <li style="margin-bottom: 8px;"><strong style="color: #0f172a;">View detections with bounding boxes in real-time</strong></li>
@@ -496,13 +495,8 @@ with gr.Blocks(css=custom_css, title="Eco Classify Part 2 - Real-Time Detection"
             </div>
             """)
         
-        # Right column - Stats and info
+        # Right column - Stats and notifications
         with gr.Column(scale=1):
-            output_image = gr.Image(
-                label="Detection Output",
-                type="numpy"
-            )
-            
             alert_box = gr.HTML(
                 value="",
                 label="Notifications"
@@ -513,13 +507,14 @@ with gr.Blocks(css=custom_css, title="Eco Classify Part 2 - Real-Time Detection"
                 label="Statistics"
             )
     
-    # Set up streaming detection
+    # Set up streaming detection - optimized for maximum speed
     camera_input.stream(
         fn=detect,
         inputs=[camera_input],
-        outputs=[output_image, stats_html, gr.Textbox(visible=False), alert_box],
-        time_limit=30,
-        stream_every=0.5
+        outputs=[camera_input, stats_html, alert_box],
+        time_limit=60,
+        stream_every=0.05,  # Process every 0.05 seconds for 20 FPS
+        concurrency_limit=1
     )
 
 if __name__ == "__main__":
@@ -528,3 +523,4 @@ if __name__ == "__main__":
         server_port=7860,
         share=False
     )
+
