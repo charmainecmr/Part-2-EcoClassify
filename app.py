@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from collections import Counter
+import time
 
 # Load YOLO model
 try:
@@ -28,6 +29,8 @@ model = load_model()
 # Global detection storage
 detection_history = []
 last_detected_materials = set()
+alert_start_time = None
+current_alert_material = None
 
 # SVG Icons
 def get_material_icon(material):
@@ -71,7 +74,7 @@ def get_bell_icon():
     </svg>'''
 
 def detect(frame):
-    global detection_history, last_detected_materials
+    global detection_history, last_detected_materials, alert_start_time, current_alert_material
     
     if frame is None:
         return None, generate_stats_html([]), ""
@@ -82,8 +85,20 @@ def detect(frame):
                     cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
         return frame, generate_stats_html([]), "Model not loaded"
 
-    # Run detection with optimized settings for speed
-    results = model.predict(frame, imgsz=416, conf=0.5, verbose=False, device='cpu', half=False, max_det=50)
+    # Run detection with CONSISTENT settings (matching ONNX export settings)
+    # Key changes: agnostic_nms=False, max_det=300 (ONNX default), iou=0.45
+    results = model.predict(
+        frame, 
+        imgsz=416,          # Keep same as before
+        conf=0.5,           # Confidence threshold
+        iou=0.45,           # IoU threshold for NMS (ONNX default)
+        verbose=False, 
+        device='cpu', 
+        half=False,         # Use float32 (same as ONNX default)
+        max_det=300,        # Match ONNX default max detections
+        agnostic_nms=False  # Class-specific NMS (ONNX default)
+    )
+    
     annotated_frame = results[0].plot()
     
     # Extract detections
@@ -93,6 +108,10 @@ def detect(frame):
         for box in results[0].boxes:
             label = results[0].names[int(box.cls)]
             confidence = float(box.conf)
+            
+            # Debug: print detections to see what's happening
+            print(f"Detected: {label} | Confidence: {confidence:.3f}")
+            
             detections.append({
                 'label': label,
                 'confidence': confidence
@@ -106,10 +125,21 @@ def detect(frame):
     if new_materials:
         # Generate alert for new materials
         material = list(new_materials)[0]
+        current_alert_material = material
+        alert_start_time = time.time()
         alert_html = generate_alert_html(material)
         last_detected_materials = current_materials
     elif not current_materials:
         last_detected_materials = set()
+    
+    # Keep showing alert if it's still within the display duration
+    if alert_start_time is not None and current_alert_material is not None:
+        elapsed = time.time() - alert_start_time
+        if elapsed < 8.0:  # Show for 8 seconds
+            alert_html = generate_alert_html(current_alert_material, elapsed)
+        else:
+            alert_start_time = None
+            current_alert_material = None
     
     # Update history (keep last 100)
     detection_history.extend(detections)
@@ -120,7 +150,7 @@ def detect(frame):
     
     return annotated_frame, stats_html, alert_html
 
-def generate_alert_html(material):
+def generate_alert_html(material, elapsed_time=0):
     colors = {
         'plastic': ('#3b82f6', '#dbeafe'),
         'paper': ('#10b981', '#d1fae5'), 
@@ -132,9 +162,22 @@ def generate_alert_html(material):
     icon_svg = get_material_icon(material)
     bell_icon = get_bell_icon()
     
+    # Calculate opacity based on elapsed time (fade out in last second)
+    total_duration = 8.0
+    fade_start = 7.0
+    
+    if elapsed_time > fade_start:
+        opacity = 1 - ((elapsed_time - fade_start) / (total_duration - fade_start))
+        opacity = max(0, min(1, opacity))
+    else:
+        opacity = 1
+    
+    # Calculate progress bar width
+    progress_width = (elapsed_time / total_duration) * 100
+    progress_width = min(100, max(0, 100 - progress_width))
+    
     return f"""
-    <div id="alert-notification" style="position: fixed; top: 20px; right: 20px; z-index: 1000; 
-                animation: slideInBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);">
+    <div id="alert-notification" style="position: fixed; top: 20px; right: 20px; z-index: 1000; opacity: {opacity};">
         <div style="background: {bg_color}; border: 3px solid {color}; 
                     border-radius: 16px; padding: 20px 24px; 
                     box-shadow: 0 10px 40px rgba(0,0,0,0.25);
@@ -161,81 +204,22 @@ def generate_alert_html(material):
             <!-- Progress bar animation -->
             <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; 
                         background: rgba(255,255,255,0.3); overflow: hidden;">
-                <div style="height: 100%; background: {color}; 
-                            animation: progress 3s linear forwards;"></div>
+                <div style="height: 100%; background: {color}; width: {progress_width}%;
+                            transition: width 0.1s linear;"></div>
             </div>
         </div>
         
-        <!-- Bell notification sound - plays 3 times -->
-        <audio id="notification-bell" autoplay>
-            <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
-        </audio>
+        <!-- Bell notification sound - plays once when alert first appears -->
+        {'<audio autoplay><source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg"></audio>' if elapsed_time < 0.1 else ''}
     </div>
     
     <style>
-        @keyframes slideInBounce {{
-            0% {{
-                transform: translateX(400px) scale(0.8);
-                opacity: 0;
-            }}
-            60% {{
-                transform: translateX(-20px) scale(1.05);
-                opacity: 1;
-            }}
-            80% {{
-                transform: translateX(10px) scale(0.98);
-            }}
-            100% {{
-                transform: translateX(0) scale(1);
-                opacity: 1;
-            }}
-        }}
-        
         @keyframes ring {{
             0%, 100% {{ transform: rotate(0deg); }}
             10%, 30% {{ transform: rotate(-15deg); }}
             20%, 40% {{ transform: rotate(15deg); }}
         }}
-        
-        @keyframes progress {{
-            from {{ width: 100%; }}
-            to {{ width: 0%; }}
-        }}
-        
-        @keyframes pulse {{
-            0%, 100% {{ transform: scale(1); opacity: 1; }}
-            50% {{ transform: scale(1.1); opacity: 0.8; }}
-        }}
-        
-        #alert-notification {{
-            animation: slideInBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                       fadeOut 0.5s ease-out 2.5s forwards;
-        }}
-        
-        @keyframes fadeOut {{
-            to {{
-                opacity: 0;
-                transform: translateX(400px);
-            }}
-        }}
     </style>
-    
-    <script>
-        // Play bell sound multiple times
-        (function() {{
-            const audio = document.getElementById('notification-bell');
-            let playCount = 0;
-            if (audio) {{
-                audio.addEventListener('ended', function() {{
-                    playCount++;
-                    if (playCount < 2) {{ // Play 2 times total
-                        this.currentTime = 0;
-                        this.play();
-                    }}
-                }});
-            }}
-        }})();
-    </script>
     """
 
 def generate_stats_html(current_detections):
@@ -523,4 +507,3 @@ if __name__ == "__main__":
         server_port=7860,
         share=False
     )
-
