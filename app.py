@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 from collections import Counter
 import time
+import torch
 
 # Load YOLO model
 try:
@@ -17,20 +18,33 @@ def load_model():
         model_path = "best.pt"
         try:
             model = YOLO(model_path)
+            # Auto-detect best device: GPU if available, else CPU
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
             print(f"YOLOv8 model loaded from {model_path}")
-            return model
+            print(f"Using device: {device.upper()}")
+            if device == 'cuda':
+                print(f"GPU: {torch.cuda.get_device_name(0)}")
+            return model, device
         except Exception as e:
             print(f"Could not load YOLO model: {e}")
     print("Using placeholder model until weights are ready.")
-    return None
+    return None, 'cpu'
 
-model = load_model()
+model, DEVICE = load_model()
+
+# Enable half precision for GPU (2x speedup)
+USE_HALF = DEVICE == 'cuda' and torch.cuda.is_available()
 
 # Global detection storage
 detection_history = []
 last_detected_materials = set()
 alert_start_time = None
 current_alert_material = None
+
+# Cache for stats to avoid regeneration every frame
+stats_cache = {"last_hash": None, "html": ""}
+frame_count = 0
+STATS_UPDATE_INTERVAL = 5  # Update stats every 5 frames
 
 # SVG Icons
 def get_material_icon(material):
@@ -74,29 +88,30 @@ def get_bell_icon():
     </svg>'''
 
 def detect(frame):
-    global detection_history, last_detected_materials, alert_start_time, current_alert_material
+    global detection_history, last_detected_materials, alert_start_time, current_alert_material, frame_count
     
     if frame is None:
-        return None, generate_stats_html([]), ""
+        return None, stats_cache["html"] or generate_stats_html([]), ""
         
     if model is None:
         frame = np.array(frame)
         cv2.putText(frame, "Model not loaded yet", (30, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
-        return frame, generate_stats_html([]), "Model not loaded"
+        return frame, stats_cache["html"] or generate_stats_html([]), "Model not loaded"
 
-    # Run detection with CONSISTENT settings (matching ONNX export settings)
-    # Key changes: agnostic_nms=False, max_det=300 (ONNX default), iou=0.45
+    frame_count += 1
+
+    # Run detection with OPTIMIZED settings (GPU + half precision)
     results = model.predict(
         frame, 
-        imgsz=416,          # Keep same as before
-        conf=0.5,           # Confidence threshold
-        iou=0.45,           # IoU threshold for NMS (ONNX default)
+        imgsz=416,
+        conf=0.5,
+        iou=0.45,
         verbose=False, 
-        device='cpu', 
-        half=False,         # Use float32 (same as ONNX default)
-        max_det=300,        # Match ONNX default max detections
-        agnostic_nms=False  # Class-specific NMS (ONNX default)
+        device=DEVICE,       # Use GPU if available
+        half=USE_HALF,       # Use FP16 on GPU for 2x speedup
+        max_det=300,
+        agnostic_nms=False
     )
     
     annotated_frame = results[0].plot()
@@ -108,9 +123,6 @@ def detect(frame):
         for box in results[0].boxes:
             label = results[0].names[int(box.cls)]
             confidence = float(box.conf)
-            
-            # Debug: print detections to see what's happening
-            print(f"Detected: {label} | Confidence: {confidence:.3f}")
             
             detections.append({
                 'label': label,
@@ -145,8 +157,21 @@ def detect(frame):
     detection_history.extend(detections)
     detection_history = detection_history[-100:]
     
-    # Generate stats
-    stats_html = generate_stats_html(detections)
+    # Generate stats only every N frames to reduce overhead
+    if frame_count % STATS_UPDATE_INTERVAL == 0 or not stats_cache["html"]:
+        # Create a hash of current state to check if update needed
+        current_counts = Counter([d['label'] for d in detections])
+        history_counts = Counter([d['label'] for d in detection_history])
+        state_hash = (tuple(sorted(current_counts.items())), tuple(sorted(history_counts.items())))
+        
+        if state_hash != stats_cache["last_hash"]:
+            stats_html = generate_stats_html(detections)
+            stats_cache["html"] = stats_html
+            stats_cache["last_hash"] = state_hash
+        else:
+            stats_html = stats_cache["html"]
+    else:
+        stats_html = stats_cache["html"]
     
     return annotated_frame, stats_html, alert_html
 
@@ -311,7 +336,7 @@ def generate_stats_html(current_detections):
     
     return html
 
-# Custom CSS continuation
+# Custom CSS
 custom_css = """
 #header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -386,8 +411,9 @@ with gr.Blocks(css=custom_css, title="Eco Classify Part 2 - Real-Time Detection"
     # Header with icon
     with gr.Row(elem_id="header"):
         with gr.Column():
-            gr.Markdown("""
-            # Eco Classify Part 2 - Real-Time Detection with Notifications
+            device_info = f"{'🚀 GPU Accelerated' if DEVICE == 'cuda' else '⚡ CPU Mode'}"
+            gr.Markdown(f"""
+            # Eco Classify Part 2 - Real-Time Detection {device_info}
             ### Powered by YOLOv8 with Bell Alerts
             """)
     
@@ -491,19 +517,15 @@ with gr.Blocks(css=custom_css, title="Eco Classify Part 2 - Real-Time Detection"
                 label="Statistics"
             )
     
-    # Set up streaming detection - optimized for maximum speed
+    # Set up streaming detection - OPTIMIZED for realistic performance
     camera_input.stream(
         fn=detect,
         inputs=[camera_input],
         outputs=[camera_input, stats_html, alert_box],
         time_limit=60,
-        stream_every=0.05,  # Process every 0.05 seconds for 20 FPS
+        stream_every=0.1,  # 10 FPS - realistic and smooth
         concurrency_limit=1
     )
 
 if __name__ == "__main__":
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-        share=False
-    )
+    demo.launch()
