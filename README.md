@@ -7,20 +7,46 @@ sdk_version: 5.49.1
 
 # EcoClassify Part 2: Real-Time Recyclables Detection
 
-**EcoClassify Part 2** is an AI-powered web application that detects and classifies recyclable materials such as **plastic, paper, glass, metal, and cardboard** in real time using a custom-trained **YOLOv8** object detection model.  
-The app is built with **Gradio**, featuring a clean, responsive interface and a live statistics dashboard that visualizes detection frequency and material breakdown.
+**EcoClassify Part 2** is an AI-powered **real-time object detection system** that identifies and classifies recyclable materials using a custom-trained **YOLOv8** model. The system detects **plastic, paper, glass, and metal** through live webcam feed with instant visual feedback and session statistics tracking.
+
+Built for **local deployment** using **OpenCV** for maximum performance and real-time responsiveness.
 
 ---
 
 ## Features
 
-- **Live webcam detection** with bounding boxes  
-- **Custom YOLOv8 model** trained on recyclable materials  
-- **Real-time statistics** panel showing detected material counts  
-- **Runs locally or on Hugging Face Spaces** (CPU-compatible)  
-- **Optimized for scalability** — easy to retrain and redeploy with new datasets  
+### Real-Time Detection
+- **Live webcam processing** at 25-30 FPS (GPU) or 5-10 FPS (CPU)
+- **Mirrored camera view** for intuitive user interaction
+- **Bounding boxes** with confidence scores for each detection
+- **Instant alerts** when new recyclable materials are detected
 
+### Smart Statistics Dashboard
+- **Current frame** detection count
+- **Session total** tracking (last 100 detections)
+- **Material breakdown** by type with color-coded indicators
+- **Real-time FPS counter** for performance monitoring
+
+### Performance Optimizations
+- **GPU acceleration** with CUDA support (2x speedup with FP16)
+- **Automatic device detection** (GPU/CPU)
+- **Statistics caching** to reduce overhead
+- **416x416 input size** for speed-accuracy balance
+
+### Visual Feedback
+- **Material-specific colors**: Plastic (Blue), Paper (Green), Metal (Orange), Glass (Purple)
+- **8-second fade-out alerts** with progress bars
+- **Semi-transparent overlays** for non-intrusive display
+- **Clean, professional UI** design
 ---
+
+## Quick Start
+
+### Prerequisites
+- Python 3.8 or higher
+- Webcam (built-in or external)
+- 4GB RAM minimum (8GB recommended)
+- **Optional**: NVIDIA GPU with CUDA for acceleration
 
 ## Setup Instructions (Local Installation)
 
@@ -28,7 +54,7 @@ Follow these steps to run **EcoClassify Part 2** locally on your computer:
 
 ### Clone or download the project
 ```bash
-git clone https://huggingface.co/spaces/charmainecmr/EcoClassifyPart2
+git clone https://github.com/charmainecmr/Part-2-EcoClassify.git
 cd EcoClassifyPart2
 ```
 
@@ -49,3 +75,21 @@ pip install -r requirements.txt
 ```
 python app.py
 ```
+
+The application will:
+1. Load the YOLOv8 model (`best.pt`)
+2. Detect your GPU/CPU automatically
+3. Open a webcam window for real-time detection
+
+---
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| **q** or **ESC** | Quit application |
+| **s** | Save screenshot with timestamp |
+| **r** | Reset session statistics |
+
+---
+
