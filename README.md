@@ -13,6 +13,11 @@ Built for **local deployment** using **OpenCV** for maximum performance and real
 
 ---
 
+# Custom Yolov8 Model Flow Used
+<img width="1600" height="896" alt="CV DIagram" src="https://github.com/user-attachments/assets/77d69826-9b1b-4ff9-a8c1-02934cca0388" />
+---
+
+
 ## Features
 
 ### Real-Time Detection
