@@ -1,10 +1,3 @@
----
-title: Part-2-EcoClassify
-app_file: app.py
-sdk: gradio
-sdk_version: 5.49.1
----
-
 # EcoClassify Part 2: Real-Time Recyclables Detection
 
 **EcoClassify Part 2** is an AI-powered **real-time object detection system** that identifies and classifies recyclable materials using a custom-trained **YOLOv8** model. The system detects **plastic, paper, glass, and metal** through live webcam feed with instant visual feedback and session statistics tracking.
@@ -18,7 +11,7 @@ Built for **local deployment** using **OpenCV** for maximum performance and real
 
 ---
 
-### (Optional) Train the Model Using Google Colab
+## (Optional) Train the Model Using Google Colab
 
 If you wish to train the model from scratch, you can use the provided https://colab.research.google.com/drive/11oeXcxLN2dHM9jyRHutJJyc7SGjmU73-?usp=sharing  
 The model training file is also included in this repository for your reference or local training.
