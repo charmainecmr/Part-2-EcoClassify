@@ -75,3 +75,21 @@ pip install -r requirements.txt
 ```
 python app.py
 ```
+
+The application will:
+1. Load the YOLOv8 model (`best.pt`)
+2. Detect your GPU/CPU automatically
+3. Open a webcam window for real-time detection
+
+---
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| **q** or **ESC** | Quit application |
+| **s** | Save screenshot with timestamp |
+| **r** | Reset session statistics |
+
+---
+
