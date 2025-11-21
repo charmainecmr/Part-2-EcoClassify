@@ -54,7 +54,7 @@ Follow these steps to run **EcoClassify Part 2** locally on your computer:
 
 ### Clone or download the project
 ```bash
-git clone https://huggingface.co/spaces/charmainecmr/EcoClassifyPart2
+git clone https://github.com/charmainecmr/Part-2-EcoClassify.git
 cd EcoClassifyPart2
 ```
 
