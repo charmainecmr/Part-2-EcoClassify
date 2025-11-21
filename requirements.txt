@@ -1,7 +1,28 @@
-gradio>=4.44.0
+# ===========================================================
+# Requirements File
+# ===========================================================
+# - This requirements.txt is for LOCAL OpenCV deployment only
+# - No web interface dependencies (Gradio) needed
+# - Uses CPU-optimized PyTorch for compatibility
+# 
+# Python Standard Library (no installation needed):
+#   - collections (Counter)
+#   - time
+#   - datetime
+# ==========================================================
+
+# YOLOv8 Object Detection
 ultralytics>=8.2.0
-opencv-python
-pillow
-numpy
+
+# Computer Vision
+opencv-python>=4.8.0
+
+# Numerical Computing
+numpy>=1.24.0
+
+# Deep Learning Framework
 torch>=2.2.0
+torchvision>=0.17.0
+
+# PyTorch CPU Index (for CPU-optimized builds)
 --extra-index-url https://download.pytorch.org/whl/cpu
