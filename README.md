@@ -15,9 +15,31 @@ Built for **local deployment** using **OpenCV** for maximum performance and real
 
 # Custom Yolov8 Model Flow Used
 <img width="1600" height="896" alt="CV DIagram" src="https://github.com/user-attachments/assets/77d69826-9b1b-4ff9-a8c1-02934cca0388" />
+
 ---
 
+### (Optional) Train the Model Using Google Colab
 
+If you wish to train the model from scratch, you can use the provided https://colab.research.google.com/drive/11oeXcxLN2dHM9jyRHutJJyc7SGjmU73-?usp=sharing  
+The model training file is also included in this repository for your reference or local training.
+
+#### Steps to Replicate the Model in Colab:
+1. Open the Colab Notebook:  
+Click on the link above to open the Colab notebook in your browser.
+
+2. Set Up the Environment:  
+The notebook provides all the necessary setup to install libraries and dependencies.
+
+3. Upload Your Dataset:  
+You can upload your dataset or use the sample dataset provided.
+
+4. Train the Model:  
+Follow the instructions to train the classification model. Once trained, the model can classify recyclable materials (e.g., glass, plastic, paper, etc.).
+
+5. Download the Model:  
+After training, you can download the model weights and use them in your own application.
+
+---
 ## Features
 
 ### Real-Time Detection
@@ -85,7 +107,7 @@ The application will:
 1. Load the YOLOv8 model (`best.pt`)
 2. Detect your GPU/CPU automatically
 3. Open a webcam window for real-time detection
-
+<img width="1590" height="930" alt="image" src="https://github.com/user-attachments/assets/a8bfc36a-f282-4b97-9efa-c4271da1fe03" />
 ---
 
 ## Controls
