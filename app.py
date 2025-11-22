@@ -444,7 +444,7 @@ class RecyclablesDetector:
         # DISPLAY STARTUP INFO
         # ====================================================================
         print("\n" + "="*60)
-        print("🎥 REAL-TIME RECYCLABLES DETECTION (MIRRORED)")
+        print(" REAL-TIME RECYCLABLES DETECTION (MIRRORED)")
         print("="*60)
         print("Press 'q' or ESC to quit")
         print("Press 's' to take a screenshot")
