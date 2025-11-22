@@ -111,6 +111,3 @@ The application will:
 | **q** or **ESC** | Quit application |
 | **s** | Save screenshot with timestamp |
 | **r** | Reset session statistics |
-
----
-
