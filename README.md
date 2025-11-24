@@ -103,6 +103,8 @@ The application will:
 2. Detect your GPU/CPU automatically
 3. Open a webcam window for real-time detection
 <img width="1590" height="930" alt="image" src="https://github.com/user-attachments/assets/a8bfc36a-f282-4b97-9efa-c4271da1fe03" />
+<img width="1595" height="929" alt="image" src="https://github.com/user-attachments/assets/8338b895-5549-42e1-9a2d-7bb3f7a8a9a7" />
+
 
 ---
 
