@@ -4,7 +4,8 @@
 
 Built for **local deployment** using **OpenCV** for maximum performance and real-time responsiveness.
 
-#### App Demo : https://youtu.be/UpA5I5shrDQ 
+#### App Demo : https://youtu.be/UpA5I5shrDQ
+### Demo Results below
 
 ---
 
