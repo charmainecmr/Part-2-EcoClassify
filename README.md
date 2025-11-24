@@ -4,6 +4,8 @@
 
 Built for **local deployment** using **OpenCV** for maximum performance and real-time responsiveness.
 
+#### App Demo : https://youtu.be/UpA5I5shrDQ 
+
 ---
 
 # Custom Yolov8 Model Flow Used
@@ -101,8 +103,6 @@ The application will:
 2. Detect your GPU/CPU automatically
 3. Open a webcam window for real-time detection
 <img width="1590" height="930" alt="image" src="https://github.com/user-attachments/assets/a8bfc36a-f282-4b97-9efa-c4271da1fe03" />
-
-#### App Demo : https://youtu.be/UpA5I5shrDQ 
 
 ---
 
